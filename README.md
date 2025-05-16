@@ -10,4 +10,6 @@
   "registry-mirrors": ["http://192.168.20.174:8084"]
 }
 И перезапустил docker.
-4. 
+4. Запустил веб-приложение https://gitfront.io/r/deusops/cgQdYMe4m1V1/django-girls-wo-docker/ на виртуальной машине app01.(Предварительно установил Python3.11, создал директорию db с файлом db.sqlite3).
+5. Написал Dockerfile для приложения, предусмотрев в entrypoint.sh выполнение миграций и создание суперюзера admin:admin.
+6. 
