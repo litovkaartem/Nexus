@@ -12,4 +12,4 @@
 И перезапустил docker.
 4. Запустил веб-приложение https://gitfront.io/r/deusops/cgQdYMe4m1V1/django-girls-wo-docker/ на виртуальной машине app01.(Предварительно установил Python3.11, создал директорию db с файлом db.sqlite3).
 5. Написал Dockerfile для приложения, предусмотрев в entrypoint.sh выполнение миграций и создание суперюзера admin:admin.
-6. 
+6. При попытке логина и пуша образа в nexus docker hosted репу, столкнулся с некорректной работой nexus. Решил проблему с помощью HTTPS. Создал самоподписанные сертификаты с помощью mkcert, написал конфигурацию nginx и обновил docker-compose.yml, добавив туда service nginx, который проксирует 8082 порт nexus(docker hosted http) через HTTPS. Файлы в папке NexusNginx.
