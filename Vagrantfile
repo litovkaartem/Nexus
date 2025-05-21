@@ -67,6 +67,8 @@ Vagrant.configure("2") do |config| #Nexus01
       cd /vagrant
       git clone https://gitfront.io/r/deusops/cgQdYMe4m1V1/django-girls-wo-docker/
       cd django-girls-wo-docker/
+      mkdir db
+      touch db/db.sqlite3
       python -m venv venv
       source venv/bin/activate
       pip install -r requirements.txt
