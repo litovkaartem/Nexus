@@ -6,8 +6,7 @@ ______Part I_____
 
 3. Привел /etc/docker/daemon.json к виду:
 {
-  "insecure-registries": ["192.168.20.174:8082", "192.168.20.174:8084"],
-  "registry-mirrors": ["http://192.168.20.174:8084"]
+  "insecure-registries": ["192.168.20.139:5443"],
 }
 И перезапустил docker.
 
@@ -15,9 +14,11 @@ ______Part I_____
  
 5. Написал Dockerfile для приложения, предусмотрев в entrypoint.sh выполнение миграций и создание суперюзера admin:admin.
  
-6. При попытке логина и пуша образа в nexus docker hosted репу, столкнулся с некорректной работой nexus. Решил проблему с помощью HTTPS. Создал самоподписанные сертификаты с помощью mkcert, написал конфигурацию nginx и обновил docker-compose.yml, добавив туда service nginx, который проксирует 8082 порт nexus(docker hosted http) через HTTPS. Файлы в папке NexusNginx.
+6. При попытке логина и пуша образа в nexus docker hosted репу, столкнулся с некорректной работой nexus. Решил проблему с помощью HTTPS. Создал самоподписанные сертификаты с помощью mkcert, написал конфигурацию nginx(5443-8082) и обновил docker-compose.yml, добавив туда service nginx, который проксирует 8082 порт nexus(docker hosted http) через HTTPS. Файлы в папке NexusNginx.
 
 7. Написал Vagrantfile для развертывания 2 ВМ в VirtualBox.
 
 _____Part II_____
 1. Клонировал репозиторий с приложением в проект GitLab. Написал простой пайплайн, поднял локальный Runner на docker executor.
+2. Доработал пайплайн до 3 джоб: сборка, пуш в GitLab Registry, пуш в Nexus.
+3. 
