@@ -1,0 +1,83 @@
+stages:
+  - build
+  - push
+  - deploy
+  - cleanup
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  NEXUS_REGISTRY: "192.168.20.139:5443"
+  NEXUS_LOGIN: "markeloff"
+  NEXUS_PASS: "Artem2001"
+  DEPLOY_USER: "deployer"
+  DEPLOY_PASS: "12345678"
+  DEPLOY_SERVER: "192.168.20.132"
+build-job:
+  stage: build
+  image: docker:latest
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+    - docker tag $IMAGE_NAME:$IMAGE_TAG "$NEXUS_REGISTRY/$IMAGE_NAME:latest"
+
+push-to-gitlab-job:
+  stage: push
+  image: docker:latest
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+    
+push-to-nexus-job:
+  stage: push
+  image: docker:latest
+  script:
+    - docker login -u $NEXUS_LOGIN -p $NEXUS_PASS $NEXUS_REGISTRY 
+    - docker push "$NEXUS_REGISTRY/$IMAGE_NAME:latest"
+
+deploy:
+  stage: deploy
+  image: docker:latest
+  environment:
+    name: staging
+    action: start
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh
+    - echo "Host *" > ~/.ssh/config
+    - echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+  script:
+    - |
+      ssh $DEPLOY_USER@$DEPLOY_SERVER <<EOF
+        docker login -u "$NEXUS_LOGIN" -p "$NEXUS_PASS" "$NEXUS_REGISTRY"
+
+        docker pull "$NEXUS_REGISTRY/$IMAGE_NAME:latest"
+
+        docker stop django_app || true
+        docker rm django_app || true
+
+        docker run -d --name django_app -p 80:8000 "$NEXUS_REGISTRY/$IMAGE_NAME:latest"
+      EOF
+
+cleanup-nexus:
+  stage: cleanup
+  image: docker:latest
+  environment:
+    name: staging
+    action: stop
+  script:
+    - apk add --no-cache curl
+    - |
+      DIGEST=$(curl -u "$NEXUS_LOGIN:$NEXUS_PASS" \
+        -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+        -I "https://$NEXUS_REGISTRY/v2/$IMAGE_NAME/manifests/latest" \
+        | grep -i "Docker-Content-Digest" \
+        | awk '{print $2}' | tr -d '\r')
+
+      curl -u "$NEXUS_LOGIN:$NEXUS_PASS" \
+        -X DELETE "https://$NEXUS_REGISTRY/v2/$IMAGE_NAME/manifests/$DIGEST"
+  rules:
+    - if: $CI_ENVIRONMENT_ACTION == 'stop'    
+
